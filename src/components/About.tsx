@@ -1,0 +1,6 @@
+import { ShieldCheck, Leaf, BadgeCheck, ArrowUpRight } from 'lucide-react';
+import { asset } from '../config/site';
+import { SectionHeading } from './SectionHeading';
+export function About() {
+ return <section id="nosotros" className="section container about"><div className="about-image"><img src={asset('projects/infraestructura_redes_xalapa.jpg')} width="822" height="527" loading="lazy" alt="Trabajos de redes de infraestructura en Xalapa"/><span>Experiencia que toma forma en cada obra.</span></div><div><SectionHeading eyebrow="Nosotros" title="Capacidad para construir. Compromiso para cumplir.">Somos Constructora ROGIN. Desarrollamos proyectos de construcción y mantenimiento para entidades gubernamentales, municipales y particulares.</SectionHeading><p>Nuestra experiencia abarca edificación, rehabilitación de pavimentos, caminos e infraestructura hidráulica, así como obra electromecánica, estudios y proyectos.</p><div className="values">{[[BadgeCheck,'Calidad'],[ShieldCheck,'Seguridad'],[Leaf,'Responsabilidad ambiental']].map(([Icon, title]) => {const I = Icon as typeof Leaf; return <div key={String(title)}><I size={23} strokeWidth={1.5}/><span>{String(title)}</span></div>;})}</div><a className="text-link" href="#servicios">Conoce nuestras capacidades <ArrowUpRight size={17}/></a></div></section>;
+}
