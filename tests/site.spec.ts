@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 test('contenido aprobado, SEO, assets y responsive', async ({ page }, testInfo) => {
  const errors: string[] = [];
  page.on('pageerror', e => errors.push(e.message));
- await page.goto('/');
+ await page.goto('./');
  await expect(page.locator('h1')).toHaveCount(1);
  await expect(page.locator('h1')).toHaveText('Construimos soluciones que perduran.');
  await expect(page.locator('.service-card')).toHaveCount(6);
@@ -43,7 +43,7 @@ test('contenido aprobado, SEO, assets y responsive', async ({ page }, testInfo) 
  await expect(page.locator('.whatsapp-float')).toBeInViewport();
  await expect(page.getByRole('link', { name: 'Solicitar cotización' }).last()).toHaveAttribute('href', /^mailto:contacto@constructorarogin.com\?subject=/);
  expect(errors).toEqual([]);
- await page.goto('/');
+ await page.goto('./');
  await page.screenshot({ path: `test-results/rogin-${testInfo.project.name}.png`, fullPage: true, scale: 'css' });
  await page.screenshot({ path: `test-results/hero-${testInfo.project.name}.png`, scale: 'css' });
  await page.locator('#proyectos').scrollIntoViewIfNeeded();
@@ -52,7 +52,7 @@ test('contenido aprobado, SEO, assets y responsive', async ({ page }, testInfo) 
  await page.screenshot({ path: `test-results/contact-${testInfo.project.name}.png`, scale: 'css' });
 });
 test('navegación móvil y teclado', async ({ page }) => {
- await page.goto('/');
+ await page.goto('./');
  const menu = page.locator('.menu-toggle');
  if (await menu.isVisible()) {
   await menu.click();
@@ -68,7 +68,7 @@ test('navegación móvil y teclado', async ({ page }) => {
 });
 
 test('hero: CTA, fondo completo y movimiento reducido', async ({ page }) => {
- await page.goto('/');
+ await page.goto('./');
  const background = page.locator('.hero-background');
  await expect(background).toHaveAttribute('fetchpriority', 'high');
  await expect(background).not.toHaveAttribute('loading', 'lazy');
@@ -80,7 +80,7 @@ test('hero: CTA, fondo completo y movimiento reducido', async ({ page }) => {
  for (const [name, hash] of [['Solicitar cotización', '#contacto'], ['Conocer proyectos', '#proyectos']]) {
   await page.locator('.hero').getByRole('link', { name }).click();
   await expect(page).toHaveURL(new RegExp(`${hash}$`));
-  await page.goto('/');
+  await page.goto('./');
  }
  await page.emulateMedia({ reducedMotion: 'no-preference' });
  await page.reload();
@@ -90,4 +90,37 @@ test('hero: CTA, fondo completo y movimiento reducido', async ({ page }) => {
   expect(await page.locator(selector).evaluate(node => getComputedStyle(node).opacity)).toBe('1');
  }
  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test('anclas alineadas con navbar y fondos sin franjas', async ({ page }) => {
+ await page.goto('./');
+ const sections = ['inicio', 'nosotros', 'servicios', 'proyectos', 'contacto'];
+ for (const id of sections) {
+  const menu = page.locator('.menu-toggle');
+  if (await menu.isVisible()) await menu.click();
+  await page.locator(`#navigation a[href="#${id}"]`).first().click();
+  await expect.poll(async () => page.evaluate(id => {
+   const header = document.querySelector('.header')!.getBoundingClientRect();
+   const section = document.getElementById(id)!.getBoundingClientRect();
+   return Math.abs(header.bottom - section.top);
+  }, id)).toBeLessThan(1);
+ }
+ await page.goto('./#contacto');
+ await expect.poll(async () => page.evaluate(() => Math.abs(document.querySelector('.header')!.getBoundingClientRect().bottom - document.getElementById('contacto')!.getBoundingClientRect().top))).toBeLessThan(1);
+ const layout = await page.evaluate(() => {
+  const wrappers = [...document.querySelectorAll('main > section'), document.querySelector('footer')!];
+  return wrappers.map((node, index) => {
+   const rect = node.getBoundingClientRect();
+   return { width: rect.width, background: getComputedStyle(node).backgroundColor, gap: index ? rect.top - wrappers[index - 1].getBoundingClientRect().bottom : 0 };
+  });
+ });
+ for (const section of layout) {
+  expect(section.gap).toBeCloseTo(0, 1);
+  expect(section.width).toBe(await page.evaluate(() => window.innerWidth));
+  expect(section.background).not.toBe('rgba(0, 0, 0, 0)');
+ }
+ expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+ await page.screenshot({ path: `test-results/anchor-contact-${page.viewportSize()!.width}.png`, scale: 'css' });
+ await page.goto('./#nosotros');
+ await page.screenshot({ path: `test-results/anchor-about-${page.viewportSize()!.width}.png`, scale: 'css' });
 });
